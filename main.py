@@ -10,7 +10,7 @@ from pathlib import Path
 #expire cach after 1 hour
 requests_cache.install_cache('cache', expire_after=3600)
 
-TRACKING_FILE = Path('/Users/tommywilson/personal_projects/staroftexas/artist_tracking.json')
+TRACKING_FILE = Path('artist_tracking.json')
 LAUNCH_DATE = datetime(2025, 12, 6)
 
 def load_tracking_data():
@@ -103,6 +103,8 @@ if response.status_code == 200:
         horizontal=True
     )
 
+    st.divider()
+
     artists_to_display.sort(key=lambda artist: artist['handle'].lower())
 
     for artist in artists_to_display:
@@ -117,11 +119,5 @@ if response.status_code == 200:
             else:
                 st.page_link(artist['link'], label=artist['handle'])
 
-
-#     # Print for debugging
-#     print("Extracted Links:")
-#     print(formatted_links)
-# else:
-#     st.error(f"Failed to retrieve the page. Status code: {response.status_code}")
 
 
