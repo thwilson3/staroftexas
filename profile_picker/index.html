@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { margin: 0; font: 14px sans-serif; color: var(--text); }
+    label { display: block; margin-bottom: 6px; }
+    select {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: var(--field, #f0f2f6);
+      color: inherit;
+      font: inherit;
+    }
+    select:focus-visible { outline: 2px solid var(--accent, #ff4b4b); outline-offset: -2px; }
+  </style>
+</head>
+<body>
+  <label for="profile">Bookmark profile</label>
+  <select id="profile"></select>
+  <script>
+    const profile = document.getElementById("profile");
+    const storageKey = "staroftexas.bookmark-profile";
+    const send = (type, payload) =>
+      window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
+    const sendProfile = () =>
+      send("streamlit:setComponentValue", { value: profile.value || null, dataType: "json" });
+
+    profile.addEventListener("change", () => {
+      try {
+        localStorage.setItem(storageKey, profile.value);
+      } catch {
+        // The selector still works for this session if browser storage is blocked.
+      }
+      sendProfile();
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+      const { args, theme } = event.data;
+      if (theme) {
+        document.body.style.setProperty("--text", theme.textColor);
+        document.body.style.setProperty("--field", theme.secondaryBackgroundColor);
+        document.body.style.setProperty("--accent", theme.primaryColor);
+        document.body.style.fontFamily = theme.font;
+      }
+      const current = profile.value;
+      const firstRender = profile.options.length === 0;
+      profile.replaceChildren(new Option("Select a profile", ""));
+      for (const [id, label] of Object.entries(args.profiles)) {
+        profile.add(new Option(label, id));
+      }
+      let selected = current;
+      if (firstRender) {
+        try {
+          selected = localStorage.getItem(storageKey);
+        } catch {
+          // Leave the selector empty when browser storage is unavailable.
+        }
+      }
+      profile.value = Object.hasOwn(args.profiles, selected) ? selected : "";
+      if (firstRender && profile.value) sendProfile();
+      send("streamlit:setFrameHeight", { height: document.body.scrollHeight + 4 });
+    });
+    send("streamlit:componentReady", { apiVersion: 1 });
+  </script>
+</body>
+</html>
